@@ -2,6 +2,8 @@
 
 const BASE_URL = process.env.BASE_URL;
 
+const HOST_CLIENT_URL = process.env.HOST_CLIENT_URL;
+
 const LOGIN_URL = `${BASE_URL}/login`;
 const CREATE_USER_URL = `${BASE_URL}/api/users`;
 const LOGOUT_URL = `${BASE_URL}/logout`;
@@ -10,6 +12,27 @@ const LOGIN_CREDENTIALS = {
   username: process.env.LOGIN_USERNAME,
   password: process.env.LOGIN_PASSWORD,
 };
+
+export function applyCORS(req, res) {
+  const allowedOrigin = "https://mon-frontend.vercel.app";
+
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+    res.setHeader("Access-Control-Allow-Methods", "POST");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+    res.status(200).end();
+    return true;
+  }
+
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  res.setHeader("Access-Control-Allow-Methods", "POST");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  return false;
+}
 
 async function performLogin() {
   const response = await fetch(LOGIN_URL, {
@@ -88,6 +111,8 @@ async function logout(token) {
 }
 
 export default async function handler(req, res) {
+  if (applyCORS(req, res)) return;
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
