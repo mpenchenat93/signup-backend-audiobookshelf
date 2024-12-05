@@ -14,10 +14,8 @@ const LOGIN_CREDENTIALS = {
 };
 
 export function applyCORS(req, res) {
-  const allowedOrigin = "https://mon-frontend.vercel.app";
-
   if (req.method === "OPTIONS") {
-    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+    res.setHeader("Access-Control-Allow-Origin", HOST_CLIENT_URL);
     res.setHeader("Access-Control-Allow-Methods", "POST");
     res.setHeader(
       "Access-Control-Allow-Headers",
@@ -27,7 +25,7 @@ export function applyCORS(req, res) {
     return true;
   }
 
-  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  res.setHeader("Access-Control-Allow-Origin", HOST_CLIENT_URL);
   res.setHeader("Access-Control-Allow-Methods", "POST");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
