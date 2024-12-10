@@ -142,7 +142,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Captcha verification failed" });
     }
 
-    // Login, création utilisateur et logout
+    // Login, création utilisateur et logout.
     const token = await performLogin();
     const userStatus = await createUser(token, { email, name, password });
     const logoutStatus = await logout(token);
