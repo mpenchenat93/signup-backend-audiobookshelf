@@ -1,8 +1,7 @@
-// api/signup.js
-
 const BASE_URL = process.env.BASE_URL;
 
 const HOST_CLIENT_URL = process.env.HOST_CLIENT_URL;
+const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
 
 const LOGIN_URL = `${BASE_URL}/login`;
 const CREATE_USER_URL = `${BASE_URL}/api/users`;
@@ -30,6 +29,25 @@ export function applyCORS(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   return false;
+}
+
+async function verifyCaptcha(token: string) {
+  const response = await fetch(
+    `https://www.google.com/recaptcha/api/siteverify`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        secret: RECAPTCHA_SECRET_KEY,
+        response: token,
+      }).toString(),
+    }
+  );
+
+  const data = await response.json();
+  return data.success && data.score > 0.5; // Ajustez le seuil selon vos besoins
 }
 
 async function performLogin() {
@@ -115,9 +133,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { email, name, password } = req.body;
+  const { email, name, password, captchaToken } = req.body;
 
   try {
+    // Vérification du captcha
+    const captchaValid = await verifyCaptcha(captchaToken);
+    if (!captchaValid) {
+      return res.status(400).json({ error: "Captcha verification failed" });
+    }
+
+    // Login, création utilisateur et logout
     const token = await performLogin();
     const userStatus = await createUser(token, { email, name, password });
     const logoutStatus = await logout(token);
