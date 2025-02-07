@@ -1,7 +1,14 @@
+import { createClient } from '@supabase/supabase-js'
+
 const BASE_URL = process.env.BASE_URL;
 
 const HOST_CLIENT_URL = process.env.HOST_CLIENT_URL;
 const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 const LOGIN_URL = `${BASE_URL}/login`;
 const CREATE_USER_URL = `${BASE_URL}/api/users`;
@@ -72,7 +79,26 @@ async function performLogin() {
   return token;
 }
 
-async function createUser(token, { email, name, password }) {
+async function createUser(token, { email, name, password, phone }) {
+  // First, store user data in Supabase
+  const { data: supabaseUser, error: supabaseError } = await supabase
+    .from('users')
+    .insert([
+      { 
+        name,
+        email,
+        phone,
+        created_at: new Date().toISOString()
+      }
+    ])
+    .select()
+    .single()
+
+  if (supabaseError) {
+    throw new Error(`Failed to store user in Supabase: ${supabaseError.message}`);
+  }
+
+  // Then proceed with Audiobookshelf user creation
   const userBody = {
     username: name,
     email: email,
@@ -133,7 +159,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { email, name, password, captchaToken } = req.body;
+  const { email, name, password, phone, captchaToken } = req.body;
 
   try {
     // Vérification du captcha
@@ -144,7 +170,7 @@ export default async function handler(req, res) {
 
     // Login, création utilisateur et logout.
     const token = await performLogin();
-    const userStatus = await createUser(token, { email, name, password });
+    const userStatus = await createUser(token, { email, name, password, phone });
     const logoutStatus = await logout(token);
 
     return res.status(200).json({
